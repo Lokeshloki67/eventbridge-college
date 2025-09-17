@@ -1,12 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/config/firebase';
 
-export type UserRole = 'student' | 'admin' | 'incharge';
+export type UserRole = 'student' | 'staff' | 'admin';
 
-export interface AuthUser extends User {
-  role?: UserRole;
+export interface AuthUser {
+  email: string;
+  role: UserRole;
 }
 
 interface AuthContextType {
@@ -30,46 +28,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          const userData = userDoc.data();
-          setUser({
-            ...firebaseUser,
-            role: userData?.role || 'student'
-          });
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-          setUser(firebaseUser as AuthUser);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+  // Demo users for localStorage authentication
+  const demoUsers = {
+    'student@college.edu': { password: 'password123', role: 'student' as UserRole },
+    'staff@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'admin@college.edu': { password: 'admin123', role: 'admin' as UserRole }
+  };
 
-    return unsubscribe;
+  useEffect(() => {
+    // Check localStorage for existing user session
+    const savedUser = localStorage.getItem('authUser');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string, role: UserRole) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-      const userData = userDoc.data();
+      const demoUser = demoUsers[email as keyof typeof demoUsers];
       
-      if (userData?.role !== role) {
-        await signOut(auth);
-        throw new Error('Invalid role for this user');
+      if (!demoUser || demoUser.password !== password || demoUser.role !== role) {
+        throw new Error('Invalid credentials or role');
       }
+
+      const authUser: AuthUser = {
+        email,
+        role: demoUser.role
+      };
+
+      setUser(authUser);
+      localStorage.setItem('authUser', JSON.stringify(authUser));
     } catch (error) {
       throw error;
     }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    setUser(null);
+    localStorage.removeItem('authUser');
   };
 
   const value = {

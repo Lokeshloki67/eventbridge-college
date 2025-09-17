@@ -12,9 +12,7 @@ import {
   Code, 
   Music, 
   BookOpen,
-  Star,
-  Award,
-  Target
+  Star
 } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
@@ -71,12 +69,6 @@ const LandingPage: React.FC = () => {
     { name: 'Sports', icon: Trophy, color: 'text-destructive' }
   ];
 
-  const stats = [
-    { label: 'Total Events', value: '50+', icon: Calendar },
-    { label: 'Registered Students', value: '2,500+', icon: Users },
-    { label: 'Success Rate', value: '98%', icon: Target },
-    { label: 'Awards Won', value: '25+', icon: Award }
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,22 +108,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex justify-center mb-3">
-                  <stat.icon className="h-8 w-8 text-primary" />
-                </div>
-                <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
-                <div className="text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Event Categories */}
       <section className="py-16">

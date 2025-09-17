@@ -59,16 +59,16 @@ const LoginPage: React.FC = () => {
       description: 'Access your student dashboard and register for events'
     },
     {
+      value: 'staff' as UserRole,
+      label: 'Staff Login',
+      icon: UserCheck,
+      description: 'Manage event attendance and student records'
+    },
+    {
       value: 'admin' as UserRole,
       label: 'Admin Login',
       icon: Shield,
       description: 'Manage events, users, and system administration'
-    },
-    {
-      value: 'incharge' as UserRole,
-      label: 'Incharge Login',
-      icon: UserCheck,
-      description: 'Manage event attendance and student records'
     }
   ];
 
@@ -178,8 +178,8 @@ const LoginPage: React.FC = () => {
             <p className="text-sm font-medium mb-2">Demo Credentials:</p>
             <div className="text-xs space-y-1 text-muted-foreground">
               <p><strong>Student:</strong> student@college.edu / password123</p>
+              <p><strong>Staff:</strong> staff@college.edu / staff123</p>
               <p><strong>Admin:</strong> admin@college.edu / admin123</p>
-              <p><strong>Incharge:</strong> incharge@college.edu / incharge123</p>
             </div>
           </CardContent>
         </Card>
