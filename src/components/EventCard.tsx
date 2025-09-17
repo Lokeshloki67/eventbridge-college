@@ -3,6 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
+import EventRegistrationDialog from '@/components/EventRegistrationDialog';
 
 export interface Event {
   id: string;
@@ -20,7 +21,7 @@ export interface Event {
 
 interface EventCardProps {
   event: Event;
-  onRegister: (eventId: string) => void;
+  onRegister: (eventId: string, registrationData: any) => void;
   isRegistered?: boolean;
 }
 
@@ -75,21 +76,26 @@ const EventCard: React.FC<EventCardProps> = ({ event, onRegister, isRegistered =
       </CardContent>
       
       <CardFooter>
-        <Button
-          className="w-full"
-          variant={isRegistered ? "success" : "hero"}
-          disabled={!event.isRegistrationOpen || (!isAvailable && !isRegistered)}
-          onClick={() => !isRegistered && onRegister(event.id)}
+        <EventRegistrationDialog
+          event={event}
+          onRegister={onRegister}
+          isRegistered={isRegistered}
         >
-          {isRegistered 
-            ? 'Registered ✓' 
-            : !event.isRegistrationOpen 
-            ? 'Registration Closed' 
-            : !isAvailable 
-            ? 'Event Full' 
-            : 'Register Now'
-          }
-        </Button>
+          <Button
+            className="w-full"
+            variant={isRegistered ? "success" : "hero"}
+            disabled={!event.isRegistrationOpen || (!isAvailable && !isRegistered)}
+          >
+            {isRegistered 
+              ? 'Registered ✓' 
+              : !event.isRegistrationOpen 
+              ? 'Registration Closed' 
+              : !isAvailable 
+              ? 'Event Full' 
+              : 'View Details & Register'
+            }
+          </Button>
+        </EventRegistrationDialog>
       </CardFooter>
     </Card>
   );

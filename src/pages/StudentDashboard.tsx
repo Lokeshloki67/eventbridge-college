@@ -73,7 +73,7 @@ const StudentDashboard: React.FC = () => {
     }
   ]);
 
-  const handleEventRegister = (eventId: string) => {
+  const handleEventRegister = (eventId: string, registrationData: any) => {
     if (registeredEvents.includes(eventId)) {
       toast({
         title: "Already Registered",
@@ -83,10 +83,19 @@ const StudentDashboard: React.FC = () => {
       return;
     }
 
+    // Store registration data in localStorage (in real app, this would go to Firebase)
+    const existingRegistrations = JSON.parse(localStorage.getItem('eventRegistrations') || '[]');
+    const newRegistration = {
+      eventId,
+      ...registrationData,
+      registrationDate: new Date().toISOString()
+    };
+    localStorage.setItem('eventRegistrations', JSON.stringify([...existingRegistrations, newRegistration]));
+
     setRegisteredEvents([...registeredEvents, eventId]);
     toast({
       title: "Registration Successful!",
-      description: "You have been registered for the event",
+      description: `You have been registered for the event with ${registrationData.numberOfParticipants} participant(s)`,
       variant: "default"
     });
   };
