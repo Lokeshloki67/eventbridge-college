@@ -14,7 +14,229 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          event_id: string
+          id: string
+          is_present: boolean | null
+          lot_number: string | null
+          marked_at: string | null
+          marks: number | null
+          staff_id: string
+          student_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          is_present?: boolean | null
+          lot_number?: string | null
+          marked_at?: string | null
+          marks?: number | null
+          staff_id: string
+          student_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          is_present?: boolean | null
+          lot_number?: string | null
+          marked_at?: string | null
+          marks?: number | null
+          staff_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registrations: {
+        Row: {
+          event_id: string
+          id: string
+          registered_at: string | null
+          registration_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          registered_at?: string | null
+          registration_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          registered_at?: string | null
+          registration_data?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          capacity: number | null
+          created_at: string | null
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+          location: string | null
+          time: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          time: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          time?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          d_no: string | null
+          email: string
+          full_name: string
+          id: string
+          phone_no: string | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          d_no?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone_no?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          d_no?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone_no?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string | null
+          event_id: string
+          id: string
+          staff_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          staff_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
