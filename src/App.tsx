@@ -8,6 +8,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import StudentDashboard from "./pages/StudentDashboard";
+import StaffDashboard from "./pages/StaffDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -35,8 +37,8 @@ const App = () => (
             <Route 
               path="/staff-dashboard" 
               element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StudentDashboard />
+                <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                  <StaffDashboard />
                 </ProtectedRoute>
               } 
             />
@@ -44,7 +46,7 @@ const App = () => (
               path="/admin-dashboard" 
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                  <StudentDashboard />
+                  <AdminDashboard />
                 </ProtectedRoute>
               } 
             />

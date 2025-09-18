@@ -5,6 +5,7 @@ export type UserRole = 'student' | 'staff' | 'admin';
 export interface AuthUser {
   email: string;
   role: UserRole;
+  uid: string;
 }
 
 interface AuthContextType {
@@ -54,7 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const authUser: AuthUser = {
         email,
-        role: demoUser.role
+        role: demoUser.role,
+        uid: `demo-${demoUser.role}-${Date.now()}`
       };
 
       setUser(authUser);
