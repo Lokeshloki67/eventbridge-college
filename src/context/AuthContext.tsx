@@ -32,7 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Demo users for localStorage authentication
   const demoUsers = {
     'student@college.edu': { password: 'password123', role: 'student' as UserRole },
+    'alex.thompson@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'jessica.liu@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'ryan.patel@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'maria.garcia@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'james.wilson@student.edu': { password: 'student123', role: 'student' as UserRole },
     'staff@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'michael.chen@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'emily.rodriguez@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'david.kim@college.edu': { password: 'staff123', role: 'staff' as UserRole },
     'admin@college.edu': { password: 'admin123', role: 'admin' as UserRole }
   };
 
@@ -53,11 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid credentials or role');
       }
 
-      // Use specific UIDs for demo users that match database
-      let uid = '';
-      if (email === 'admin@college.edu') uid = 'admin-demo-uid-001';
-      else if (email === 'staff@college.edu') uid = 'staff-demo-uid-001';
-      else if (email === 'student@college.edu') uid = 'student-demo-uid-001';
+      // Generate unique UIDs for demo users
+      const uidMap: { [key: string]: string } = {
+        'admin@college.edu': 'admin-demo-uid-001',
+        'staff@college.edu': 'staff-demo-uid-001',
+        'student@college.edu': 'student-demo-uid-001',
+        'michael.chen@college.edu': 'staff-demo-uid-002',
+        'emily.rodriguez@college.edu': 'staff-demo-uid-003',
+        'david.kim@college.edu': 'staff-demo-uid-004',
+        'alex.thompson@student.edu': 'student-demo-uid-002',
+        'jessica.liu@student.edu': 'student-demo-uid-003',
+        'ryan.patel@student.edu': 'student-demo-uid-004',
+        'maria.garcia@student.edu': 'student-demo-uid-005',
+        'james.wilson@student.edu': 'student-demo-uid-006'
+      };
+      const uid = uidMap[email] || `demo-${Date.now()}`;
 
       const authUser: AuthUser = {
         email,
