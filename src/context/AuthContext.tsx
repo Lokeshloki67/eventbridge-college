@@ -53,10 +53,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid credentials or role');
       }
 
+      // Use specific UIDs for demo users that match database
+      let uid = '';
+      if (email === 'admin@college.edu') uid = 'admin-demo-uid-001';
+      else if (email === 'staff@college.edu') uid = 'staff-demo-uid-001';
+      else if (email === 'student@college.edu') uid = 'student-demo-uid-001';
+
       const authUser: AuthUser = {
         email,
         role: demoUser.role,
-        uid: `demo-${demoUser.role}-${Date.now()}`
+        uid
       };
 
       setUser(authUser);
