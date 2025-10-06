@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +7,7 @@ import EventCard, { Event } from '@/components/EventCard';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Calendar, 
   Trophy, 
@@ -19,61 +20,104 @@ import {
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Mock data - in real app, this would come from Firebase
-  const [registeredEvents, setRegisteredEvents] = useState<string[]>(['1', '3']);
-  const [events] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Tech Symposium 2024',
-      description: 'Annual technical symposium featuring workshops, hackathons, and industry talks',
-      category: 'Technical',
-      date: '2024-03-15',
-      time: '9:00 AM',
-      venue: 'Main Auditorium',
-      maxParticipants: 500,
-      currentParticipants: 342,
-      isRegistrationOpen: true
-    },
-    {
-      id: '2',
-      title: 'Cultural Fest',
-      description: 'Celebrate diversity through music, dance, and cultural performances',
-      category: 'Cultural',
-      date: '2024-03-20',
-      time: '6:00 PM',
-      venue: 'Open Grounds',
-      maxParticipants: 1000,
-      currentParticipants: 678,
-      isRegistrationOpen: true
-    },
-    {
-      id: '3',
-      title: 'Startup Bootcamp',
-      description: 'Learn from successful entrepreneurs and pitch your ideas',
-      category: 'Workshop',
-      date: '2024-03-25',
-      time: '10:00 AM',
-      venue: 'Innovation Hub',
-      maxParticipants: 100,
-      currentParticipants: 95,
-      isRegistrationOpen: true
-    },
-    {
-      id: '4',
-      title: 'Sports Day',
-      description: 'Annual sports competition with various athletic events',
-      category: 'Sports',
-      date: '2024-03-30',
-      time: '7:00 AM',
-      venue: 'Sports Complex',
-      maxParticipants: 300,
-      currentParticipants: 156,
-      isRegistrationOpen: true
-    }
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
-  const handleEventRegister = (eventId: string, registrationData: any) => {
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+      fetchEvents();
+      fetchRegisteredEvents();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.uid)
+        .single();
+
+      if (error) throw error;
+      setUserProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const eventsWithCounts = await Promise.all(
+          data.map(async (event) => {
+            const { count } = await supabase
+              .from('event_registrations')
+              .select('*', { count: 'exact', head: true })
+              .eq('event_id', event.id);
+
+            return {
+              id: event.id,
+              title: event.title,
+              description: event.description || '',
+              category: 'Event',
+              date: event.date,
+              time: event.time,
+              venue: event.location || 'TBA',
+              maxParticipants: event.capacity || 100,
+              currentParticipants: count || 0,
+              isRegistrationOpen: true
+            };
+          })
+        );
+        setEvents(eventsWithCounts);
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRegisteredEvents = async () => {
+    if (!userProfile?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select('event_id')
+        .eq('user_id', userProfile.id);
+
+      if (error) throw error;
+      if (data) {
+        setRegisteredEvents(data.map(reg => reg.event_id));
+      }
+    } catch (error) {
+      console.error('Error fetching registrations:', error);
+    }
+  };
+
+  const handleEventRegister = async (eventId: string, registrationData: any) => {
+    if (!userProfile?.id) {
+      toast({
+        title: "Error",
+        description: "Please log in to register for events",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (registeredEvents.includes(eventId)) {
       toast({
         title: "Already Registered",
@@ -83,21 +127,34 @@ const StudentDashboard: React.FC = () => {
       return;
     }
 
-    // Store registration data in localStorage (in real app, this would go to Firebase)
-    const existingRegistrations = JSON.parse(localStorage.getItem('eventRegistrations') || '[]');
-    const newRegistration = {
-      eventId,
-      ...registrationData,
-      registrationDate: new Date().toISOString()
-    };
-    localStorage.setItem('eventRegistrations', JSON.stringify([...existingRegistrations, newRegistration]));
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .insert({
+          event_id: eventId,
+          user_id: userProfile.id,
+          registration_data: registrationData
+        });
 
-    setRegisteredEvents([...registeredEvents, eventId]);
-    toast({
-      title: "Registration Successful!",
-      description: `You have been registered for the event with ${registrationData.numberOfParticipants} participant(s)`,
-      variant: "default"
-    });
+      if (error) throw error;
+
+      setRegisteredEvents([...registeredEvents, eventId]);
+      toast({
+        title: "Registration Successful!",
+        description: `You have been registered for the event`,
+        variant: "default"
+      });
+      
+      // Refresh events to update participant count
+      fetchEvents();
+    } catch (error) {
+      console.error('Error registering for event:', error);
+      toast({
+        title: "Registration Failed",
+        description: "There was an error registering for the event",
+        variant: "destructive"
+      });
+    }
   };
 
   const myEvents = events.filter(event => registeredEvents.includes(event.id));
@@ -109,6 +166,17 @@ const StudentDashboard: React.FC = () => {
     { label: 'Upcoming Events', value: registeredEvents.length.toString(), icon: Clock, color: 'text-accent' },
     { label: 'Achievements', value: '5', icon: Trophy, color: 'text-destructive' }
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

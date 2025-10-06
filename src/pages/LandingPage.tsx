@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EventCard, { Event } from '@/components/EventCard';
 import Navbar from '@/components/Navbar';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Calendar, 
   MapPin, 
@@ -17,46 +18,53 @@ import {
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  
-  // Mock events data
-  const [events] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Tech Symposium 2024',
-      description: 'Annual technical symposium featuring workshops, hackathons, and industry talks',
-      category: 'Technical',
-      date: '2024-03-15',
-      time: '9:00 AM',
-      venue: 'Main Auditorium',
-      maxParticipants: 500,
-      currentParticipants: 342,
-      isRegistrationOpen: true
-    },
-    {
-      id: '2',
-      title: 'Cultural Fest',
-      description: 'Celebrate diversity through music, dance, and cultural performances',
-      category: 'Cultural',
-      date: '2024-03-20',
-      time: '6:00 PM',
-      venue: 'Open Grounds',
-      maxParticipants: 1000,
-      currentParticipants: 678,
-      isRegistrationOpen: true
-    },
-    {
-      id: '3',
-      title: 'Startup Bootcamp',
-      description: 'Learn from successful entrepreneurs and pitch your ideas',
-      category: 'Workshop',
-      date: '2024-03-25',
-      time: '10:00 AM',
-      venue: 'Innovation Hub',
-      maxParticipants: 100,
-      currentParticipants: 95,
-      isRegistrationOpen: true
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        // Get registration counts for each event
+        const eventsWithCounts = await Promise.all(
+          data.map(async (event) => {
+            const { count } = await supabase
+              .from('event_registrations')
+              .select('*', { count: 'exact', head: true })
+              .eq('event_id', event.id);
+
+            return {
+              id: event.id,
+              title: event.title,
+              description: event.description || '',
+              category: 'Event',
+              date: event.date,
+              time: event.time,
+              venue: event.location || 'TBA',
+              maxParticipants: event.capacity || 100,
+              currentParticipants: count || 0,
+              isRegistrationOpen: true
+            };
+          })
+        );
+        setEvents(eventsWithCounts);
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const handleEventRegister = (eventId: string) => {
     navigate('/login');
@@ -142,25 +150,37 @@ const LandingPage: React.FC = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {events.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                onRegister={handleEventRegister}
-              />
-            ))}
-          </div>
-          
-          <div className="text-center mt-12">
-            <Button 
-              variant="hero" 
-              size="lg"
-              onClick={() => navigate('/login')}
-            >
-              View All Events
-            </Button>
-          </div>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : events.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {events.slice(0, 6).map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    onRegister={handleEventRegister}
+                  />
+                ))}
+              </div>
+              
+              <div className="text-center mt-12">
+                <Button 
+                  variant="hero" 
+                  size="lg"
+                  onClick={() => navigate('/login')}
+                >
+                  View All Events
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No events available at the moment</p>
+            </div>
+          )}
         </div>
       </section>
 

@@ -82,6 +82,24 @@ interface StaffAssignment {
   };
 }
 
+interface EventRegistration {
+  id: string;
+  event_id: string;
+  user_id: string;
+  registered_at: string;
+  registration_data: any;
+  profiles: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  events: {
+    id: string;
+    title: string;
+    date: string;
+  };
+}
+
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -89,6 +107,7 @@ const AdminDashboard: React.FC = () => {
   const [staff, setStaff] = useState<Profile[]>([]);
   const [students, setStudents] = useState<Profile[]>([]);
   const [staffAssignments, setStaffAssignments] = useState<StaffAssignment[]>([]);
+  const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isStaffAssignDialogOpen, setIsStaffAssignDialogOpen] = useState(false);
@@ -121,6 +140,7 @@ const AdminDashboard: React.FC = () => {
         fetchStaff(),
         fetchStudents(),
         fetchStaffAssignments(),
+        fetchEventRegistrations(),
       ]);
     } catch (error) {
       toast({
@@ -172,6 +192,19 @@ const AdminDashboard: React.FC = () => {
       `);
     
     if (data) setStaffAssignments(data);
+  };
+
+  const fetchEventRegistrations = async () => {
+    const { data } = await supabase
+      .from('event_registrations')
+      .select(`
+        *,
+        profiles!event_registrations_user_id_fkey(id, full_name, email),
+        events(id, title, date)
+      `)
+      .order('registered_at', { ascending: false });
+    
+    if (data) setEventRegistrations(data);
   };
 
   const handleCreateEvent = async () => {
@@ -327,11 +360,12 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="staff">Staff Management</TabsTrigger>
+            <TabsTrigger value="registrations">Event Registrations</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
-            <TabsTrigger value="assignments">Staff Assignments</TabsTrigger>
+            <TabsTrigger value="assignments">Assignments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="events" className="space-y-6">
@@ -460,6 +494,57 @@ const AdminDashboard: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="registrations" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Event Registrations
+                </CardTitle>
+                <CardDescription>View all student event registrations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {eventRegistrations.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead>Student Email</TableHead>
+                        <TableHead>Event</TableHead>
+                        <TableHead>Event Date</TableHead>
+                        <TableHead>Registered At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {eventRegistrations.map((registration) => (
+                        <TableRow key={registration.id}>
+                          <TableCell className="font-medium">
+                            {registration.profiles?.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{registration.profiles?.email || 'N/A'}</TableCell>
+                          <TableCell>{registration.events?.title || 'N/A'}</TableCell>
+                          <TableCell>
+                            {registration.events?.date ? 
+                              new Date(registration.events.date).toLocaleDateString() : 
+                              'N/A'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {new Date(registration.registered_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No event registrations found
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
