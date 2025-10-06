@@ -1,0 +1,9 @@
+-- Insert sample events for demonstration
+INSERT INTO public.events (title, description, date, time, location, capacity) VALUES
+('Annual Tech Conference 2024', 'Join us for the biggest technology conference featuring AI, Web Development, and Innovation talks. Industry experts will share insights on the latest tech trends and career opportunities.', '2024-03-15', '09:00:00', 'Main Auditorium', 200),
+('Cultural Fest Celebration', 'A vibrant celebration of diverse cultures with performances, food, and art exhibitions. Experience music, dance, and traditions from around the world.', '2024-03-22', '14:00:00', 'College Ground', 500),
+('Science Symposium', 'Research presentations and scientific discussions by students and faculty. Showcase your research projects and learn from cutting-edge scientific work.', '2024-04-05', '10:00:00', 'Science Building Hall', 150),
+('Sports Championship', 'Inter-college sports competition including cricket, football, and athletics. Show your team spirit and compete for the championship trophy.', '2024-04-12', '08:00:00', 'Sports Complex', 1000),
+('Career Fair 2024', 'Meet with top companies and explore internship and job opportunities. Network with recruiters and learn about career paths in various industries.', '2024-04-20', '11:00:00', 'Exhibition Hall', 300),
+('Hackathon Weekend', '48-hour coding competition with amazing prizes. Build innovative solutions and collaborate with fellow developers.', '2024-05-03', '18:00:00', 'Computer Lab Block', 100),
+('Photography Workshop', 'Learn advanced photography techniques from professional photographers. Bring your camera and explore creative composition.', '2024-05-10', '15:00:00', 'Art Studio', 75);
