@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import Navbar from '@/components/Navbar';
-import { Calendar, MapPin, Clock, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, CheckCircle, XCircle, Trophy } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -212,6 +212,26 @@ const StaffDashboard: React.FC = () => {
     }
   };
 
+  const sortByLotNumber = () => {
+    const sorted = [...eventParticipants].sort((a, b) => {
+      const lotA = attendanceData[a.id]?.lot_number || '';
+      const lotB = attendanceData[b.id]?.lot_number || '';
+      return lotA.localeCompare(lotB);
+    });
+    setEventParticipants(sorted);
+  };
+
+  const getTopThreeStudents = () => {
+    return [...eventParticipants]
+      .filter(p => attendanceData[p.id]?.marks > 0)
+      .sort((a, b) => {
+        const marksA = attendanceData[a.id]?.marks || 0;
+        const marksB = attendanceData[b.id]?.marks || 0;
+        return marksB - marksA;
+      })
+      .slice(0, 3);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -296,12 +316,49 @@ const StaffDashboard: React.FC = () => {
                     <CardTitle>{selectedEvent.title}</CardTitle>
                     <CardDescription>Manage attendance and marks</CardDescription>
                   </div>
-                  <Button variant="outline" onClick={() => setSelectedEvent(null)}>
-                    Back to Events
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={sortByLotNumber}>
+                      Sort by Lot Number
+                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+                      Back to Events
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
             </Card>
+
+            {/* Top 3 Students */}
+            {getTopThreeStudents().length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    Top 3 Students
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {getTopThreeStudents().map((student, index) => (
+                      <Card key={student.id} className="bg-gradient-to-br from-primary/5 to-primary/10">
+                        <CardContent className="pt-6 text-center">
+                          <div className="text-4xl mb-2">
+                            {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                          </div>
+                          <h3 className="font-bold mb-1">{student.full_name}</h3>
+                          <p className="text-2xl font-bold text-primary">
+                            {attendanceData[student.id]?.marks || 0} marks
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Lot: {attendanceData[student.id]?.lot_number || 'N/A'}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>

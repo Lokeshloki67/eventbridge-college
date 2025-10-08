@@ -111,7 +111,15 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isStaffAssignDialogOpen, setIsStaffAssignDialogOpen] = useState(false);
+  const [isEditStudentDialogOpen, setIsEditStudentDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Profile | null>(null);
+  const [studentForm, setStudentForm] = useState({
+    full_name: '',
+    email: '',
+    phone_no: '',
+    d_no: ''
+  });
 
   // Form states
   const [eventForm, setEventForm] = useState({
@@ -337,6 +345,44 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleEditStudent = (student: Profile) => {
+    setSelectedStudent(student);
+    setStudentForm({
+      full_name: student.full_name,
+      email: student.email,
+      phone_no: student.phone_no || '',
+      d_no: student.d_no || ''
+    });
+    setIsEditStudentDialogOpen(true);
+  };
+
+  const handleUpdateStudent = async () => {
+    if (!selectedStudent) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(studentForm)
+        .eq('id', selectedStudent.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Student details updated successfully",
+      });
+
+      setIsEditStudentDialogOpen(false);
+      fetchStudents();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update student details",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -360,12 +406,11 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="registrations">Event Registrations</TabsTrigger>
+            <TabsTrigger value="registrations">Registrations</TabsTrigger>
             <TabsTrigger value="staff">Staff</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
-            <TabsTrigger value="assignments">Assignments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="events" className="space-y-6">
@@ -605,6 +650,7 @@ const AdminDashboard: React.FC = () => {
                       <TableHead>Phone</TableHead>
                       <TableHead>D.No</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -617,30 +663,93 @@ const AdminDashboard: React.FC = () => {
                         <TableCell>
                           <Badge variant="outline">{student.role}</Badge>
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditStudent(student)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
+
+            {/* Edit Student Dialog */}
+            <Dialog open={isEditStudentDialogOpen} onOpenChange={setIsEditStudentDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Student Details</DialogTitle>
+                  <DialogDescription>
+                    Update student information below.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="student_name">Full Name</Label>
+                    <Input
+                      id="student_name"
+                      value={studentForm.full_name}
+                      onChange={(e) => setStudentForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Student name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="student_email">Email</Label>
+                    <Input
+                      id="student_email"
+                      type="email"
+                      value={studentForm.email}
+                      onChange={(e) => setStudentForm(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Email address"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="student_phone">Phone Number</Label>
+                    <Input
+                      id="student_phone"
+                      value={studentForm.phone_no}
+                      onChange={(e) => setStudentForm(prev => ({ ...prev, phone_no: e.target.value }))}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="student_dno">D.No</Label>
+                    <Input
+                      id="student_dno"
+                      value={studentForm.d_no}
+                      onChange={(e) => setStudentForm(prev => ({ ...prev, d_no: e.target.value }))}
+                      placeholder="Department number"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleUpdateStudent}>Update Student</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
-          <TabsContent value="assignments" className="space-y-6">
+          <TabsContent value="staff" className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      Staff Assignments
-                    </CardTitle>
-                    <CardDescription>Assign staff to events</CardDescription>
-                  </div>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Staff Management
+                </CardTitle>
+                <CardDescription>Manage staff members and assign them to events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
                   <Dialog open={isStaffAssignDialogOpen} onOpenChange={setIsStaffAssignDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
-                        Assign Staff
+                        Assign Staff to Event
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -694,8 +803,34 @@ const AdminDashboard: React.FC = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </CardHeader>
-              <CardContent>
+
+                <h3 className="text-lg font-semibold mb-4">All Staff Members</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>D.No</TableHead>
+                      <TableHead>Role</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {staff.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell className="font-medium">{member.full_name}</TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>{member.phone_no || 'N/A'}</TableCell>
+                        <TableCell>{member.d_no || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{member.role}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                <h3 className="text-lg font-semibold mt-8 mb-4">Staff Assignments</h3>
                 <Table>
                   <TableHeader>
                     <TableRow>
