@@ -70,6 +70,7 @@ interface StaffAssignment {
   id: string;
   staff_id: string;
   event_id: string;
+  created_at: string;
   profiles: {
     id: string;
     full_name: string;
@@ -92,6 +93,8 @@ interface EventRegistration {
     id: string;
     full_name: string;
     email: string;
+    phone_no: string;
+    d_no: string;
   };
   events: {
     id: string;
@@ -105,21 +108,15 @@ const AdminDashboard: React.FC = () => {
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [staff, setStaff] = useState<Profile[]>([]);
-  const [students, setStudents] = useState<Profile[]>([]);
   const [staffAssignments, setStaffAssignments] = useState<StaffAssignment[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [isStaffAssignDialogOpen, setIsStaffAssignDialogOpen] = useState(false);
-  const [isEditStudentDialogOpen, setIsEditStudentDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState<Profile | null>(null);
-  const [studentForm, setStudentForm] = useState({
-    full_name: '',
-    email: '',
-    phone_no: '',
-    d_no: ''
-  });
+  const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isEditRegistrationOpen, setIsEditRegistrationOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<Profile | null>(null);
+  const [editingRegistration, setEditingRegistration] = useState<EventRegistration | null>(null);
 
   // Form states
   const [eventForm, setEventForm] = useState({
@@ -130,9 +127,24 @@ const AdminDashboard: React.FC = () => {
     location: '',
     capacity: 50,
   });
+
+  const [staffForm, setStaffForm] = useState({
+    full_name: '',
+    email: '',
+    phone_no: '',
+    d_no: ''
+  });
+
   const [assignmentForm, setAssignmentForm] = useState({
     staff_id: '',
     event_id: '',
+  });
+
+  const [registrationForm, setRegistrationForm] = useState({
+    full_name: '',
+    email: '',
+    phone_no: '',
+    d_no: ''
   });
 
   useEffect(() => {
@@ -146,7 +158,6 @@ const AdminDashboard: React.FC = () => {
       await Promise.all([
         fetchEvents(),
         fetchStaff(),
-        fetchStudents(),
         fetchStaffAssignments(),
         fetchEventRegistrations(),
       ]);
@@ -180,16 +191,6 @@ const AdminDashboard: React.FC = () => {
     if (data) setStaff(data);
   };
 
-  const fetchStudents = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'student')
-      .order('full_name');
-    
-    if (data) setStudents(data);
-  };
-
   const fetchStaffAssignments = async () => {
     const { data } = await supabase
       .from('staff_assignments')
@@ -207,7 +208,7 @@ const AdminDashboard: React.FC = () => {
       .from('event_registrations')
       .select(`
         *,
-        profiles!event_registrations_user_id_fkey(id, full_name, email),
+        profiles!event_registrations_user_id_fkey(id, full_name, email, phone_no, d_no),
         events(id, title, date)
       `)
       .order('registered_at', { ascending: false });
@@ -258,6 +259,45 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleEditStaff = (staffMember: Profile) => {
+    setEditingStaff(staffMember);
+    setStaffForm({
+      full_name: staffMember.full_name,
+      email: staffMember.email,
+      phone_no: staffMember.phone_no || '',
+      d_no: staffMember.d_no || ''
+    });
+    setIsStaffDialogOpen(true);
+  };
+
+  const handleUpdateStaff = async () => {
+    if (!editingStaff) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(staffForm)
+        .eq('id', editingStaff.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Staff member updated successfully",
+      });
+
+      setIsStaffDialogOpen(false);
+      setEditingStaff(null);
+      fetchStaff();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update staff member",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAssignStaff = async () => {
     try {
       const { data: profile } = await supabase
@@ -282,7 +322,7 @@ const AdminDashboard: React.FC = () => {
         description: "Staff assigned to event successfully",
       });
 
-      setIsStaffAssignDialogOpen(false);
+      setIsAssignDialogOpen(false);
       setAssignmentForm({
         staff_id: '',
         event_id: '',
@@ -345,25 +385,25 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleEditStudent = (student: Profile) => {
-    setSelectedStudent(student);
-    setStudentForm({
-      full_name: student.full_name,
-      email: student.email,
-      phone_no: student.phone_no || '',
-      d_no: student.d_no || ''
+  const handleEditRegistration = (registration: EventRegistration) => {
+    setEditingRegistration(registration);
+    setRegistrationForm({
+      full_name: registration.profiles?.full_name || '',
+      email: registration.profiles?.email || '',
+      phone_no: registration.profiles?.phone_no || '',
+      d_no: registration.profiles?.d_no || ''
     });
-    setIsEditStudentDialogOpen(true);
+    setIsEditRegistrationOpen(true);
   };
 
-  const handleUpdateStudent = async () => {
-    if (!selectedStudent) return;
+  const handleUpdateRegistration = async () => {
+    if (!editingRegistration) return;
 
     try {
       const { error } = await supabase
         .from('profiles')
-        .update(studentForm)
-        .eq('id', selectedStudent.id);
+        .update(registrationForm)
+        .eq('id', editingRegistration.user_id);
 
       if (error) throw error;
 
@@ -372,8 +412,9 @@ const AdminDashboard: React.FC = () => {
         description: "Student details updated successfully",
       });
 
-      setIsEditStudentDialogOpen(false);
-      fetchStudents();
+      setIsEditRegistrationOpen(false);
+      setEditingRegistration(null);
+      fetchEventRegistrations();
     } catch (error) {
       toast({
         title: "Error",
@@ -401,18 +442,19 @@ const AdminDashboard: React.FC = () => {
             Admin Dashboard
           </h1>
           <p className="text-muted-foreground">
-            Welcome back, {user?.email}! Manage events, staff, and students.
+            Welcome back, {user?.email}! Manage events, staff, and registrations.
           </p>
         </div>
 
         <Tabs defaultValue="events" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="registrations">Registrations</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
-            <TabsTrigger value="students">Students</TabsTrigger>
+            <TabsTrigger value="staff">Staff Management</TabsTrigger>
+            <TabsTrigger value="assignments">Staff Assignments</TabsTrigger>
+            <TabsTrigger value="registrations">Event Registrations</TabsTrigger>
           </TabsList>
 
+          {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
             <Card>
               <CardHeader>
@@ -525,15 +567,13 @@ const AdminDashboard: React.FC = () => {
                         <TableCell>{event.location}</TableCell>
                         <TableCell>{event.capacity}</TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteEvent(event.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteEvent(event.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -543,57 +583,7 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="registrations" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Event Registrations
-                </CardTitle>
-                <CardDescription>View all student event registrations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {eventRegistrations.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student Name</TableHead>
-                        <TableHead>Student Email</TableHead>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Event Date</TableHead>
-                        <TableHead>Registered At</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {eventRegistrations.map((registration) => (
-                        <TableRow key={registration.id}>
-                          <TableCell className="font-medium">
-                            {registration.profiles?.full_name || 'N/A'}
-                          </TableCell>
-                          <TableCell>{registration.profiles?.email || 'N/A'}</TableCell>
-                          <TableCell>{registration.events?.title || 'N/A'}</TableCell>
-                          <TableCell>
-                            {registration.events?.date ? 
-                              new Date(registration.events.date).toLocaleDateString() : 
-                              'N/A'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            {new Date(registration.registered_at).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No event registrations found
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
+          {/* Staff Management Tab */}
           <TabsContent value="staff" className="space-y-6">
             <Card>
               <CardHeader>
@@ -601,7 +591,7 @@ const AdminDashboard: React.FC = () => {
                   <UserPlus className="h-5 w-5" />
                   Staff Management
                 </CardTitle>
-                <CardDescription>Manage staff members</CardDescription>
+                <CardDescription>Manage staff member profiles</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -611,7 +601,7 @@ const AdminDashboard: React.FC = () => {
                       <TableHead>Email</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>D.No</TableHead>
-                      <TableHead>Role</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -622,54 +612,13 @@ const AdminDashboard: React.FC = () => {
                         <TableCell>{member.phone_no || 'N/A'}</TableCell>
                         <TableCell>{member.d_no || 'N/A'}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{member.role}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="students" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Students Management
-                </CardTitle>
-                <CardDescription>View and manage student records</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>D.No</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {students.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.full_name}</TableCell>
-                        <TableCell>{student.email}</TableCell>
-                        <TableCell>{student.phone_no || 'N/A'}</TableCell>
-                        <TableCell>{student.d_no || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{student.role}</Badge>
-                        </TableCell>
-                        <TableCell>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleEditStudent(student)}
+                            onClick={() => handleEditStaff(member)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -679,77 +628,78 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Edit Student Dialog */}
-            <Dialog open={isEditStudentDialogOpen} onOpenChange={setIsEditStudentDialogOpen}>
+            {/* Edit Staff Dialog */}
+            <Dialog open={isStaffDialogOpen} onOpenChange={setIsStaffDialogOpen}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Edit Student Details</DialogTitle>
+                  <DialogTitle>Edit Staff Member</DialogTitle>
                   <DialogDescription>
-                    Update student information below.
+                    Update staff member information below.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="student_name">Full Name</Label>
+                    <Label htmlFor="staff_name">Full Name</Label>
                     <Input
-                      id="student_name"
-                      value={studentForm.full_name}
-                      onChange={(e) => setStudentForm(prev => ({ ...prev, full_name: e.target.value }))}
-                      placeholder="Student name"
+                      id="staff_name"
+                      value={staffForm.full_name}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Staff name"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="student_email">Email</Label>
+                    <Label htmlFor="staff_email">Email</Label>
                     <Input
-                      id="student_email"
+                      id="staff_email"
                       type="email"
-                      value={studentForm.email}
-                      onChange={(e) => setStudentForm(prev => ({ ...prev, email: e.target.value }))}
+                      value={staffForm.email}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="Email address"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="student_phone">Phone Number</Label>
+                    <Label htmlFor="staff_phone">Phone Number</Label>
                     <Input
-                      id="student_phone"
-                      value={studentForm.phone_no}
-                      onChange={(e) => setStudentForm(prev => ({ ...prev, phone_no: e.target.value }))}
+                      id="staff_phone"
+                      value={staffForm.phone_no}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, phone_no: e.target.value }))}
                       placeholder="Phone number"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="student_dno">D.No</Label>
+                    <Label htmlFor="staff_dno">D.No</Label>
                     <Input
-                      id="student_dno"
-                      value={studentForm.d_no}
-                      onChange={(e) => setStudentForm(prev => ({ ...prev, d_no: e.target.value }))}
+                      id="staff_dno"
+                      value={staffForm.d_no}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, d_no: e.target.value }))}
                       placeholder="Department number"
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleUpdateStudent}>Update Student</Button>
+                  <Button onClick={handleUpdateStaff}>Update Staff</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </TabsContent>
 
-          <TabsContent value="staff" className="space-y-6">
+          {/* Staff Assignments Tab */}
+          <TabsContent value="assignments" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  Staff Management
-                </CardTitle>
-                <CardDescription>Manage staff members and assign them to events</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6">
-                  <Dialog open={isStaffAssignDialogOpen} onOpenChange={setIsStaffAssignDialogOpen}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      Staff Assignments
+                    </CardTitle>
+                    <CardDescription>Assign staff members to events</CardDescription>
+                  </div>
+                  <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
-                        Assign Staff to Event
+                        Assign Staff
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -803,40 +753,15 @@ const AdminDashboard: React.FC = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-
-                <h3 className="text-lg font-semibold mb-4">All Staff Members</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>D.No</TableHead>
-                      <TableHead>Role</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {staff.map((member) => (
-                      <TableRow key={member.id}>
-                        <TableCell className="font-medium">{member.full_name}</TableCell>
-                        <TableCell>{member.email}</TableCell>
-                        <TableCell>{member.phone_no || 'N/A'}</TableCell>
-                        <TableCell>{member.d_no || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{member.role}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <h3 className="text-lg font-semibold mt-8 mb-4">Staff Assignments</h3>
+              </CardHeader>
+              <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Staff Member</TableHead>
                       <TableHead>Event</TableHead>
                       <TableHead>Event Date</TableHead>
+                      <TableHead>Assigned Date</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -844,9 +769,9 @@ const AdminDashboard: React.FC = () => {
                     {staffAssignments.map((assignment) => (
                       <TableRow key={assignment.id}>
                         <TableCell className="font-medium">
-                          {assignment.profiles?.full_name}
+                          {assignment.profiles?.full_name || 'N/A'}
                         </TableCell>
-                        <TableCell>{assignment.events?.title}</TableCell>
+                        <TableCell>{assignment.events?.title || 'N/A'}</TableCell>
                         <TableCell>
                           {assignment.events?.date ? 
                             new Date(assignment.events.date).toLocaleDateString() : 
@@ -854,12 +779,16 @@ const AdminDashboard: React.FC = () => {
                           }
                         </TableCell>
                         <TableCell>
+                          {new Date(assignment.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
                           <Button
-                            variant="outline"
+                            variant="destructive"
                             size="sm"
                             onClick={() => handleRemoveStaffAssignment(assignment.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -868,6 +797,122 @@ const AdminDashboard: React.FC = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Event Registrations Tab */}
+          <TabsContent value="registrations" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Event Registrations
+                </CardTitle>
+                <CardDescription>View and manage student event registrations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {eventRegistrations.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>D.No</TableHead>
+                        <TableHead>Event</TableHead>
+                        <TableHead>Registered Date</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {eventRegistrations.map((registration) => (
+                        <TableRow key={registration.id}>
+                          <TableCell className="font-medium">
+                            {registration.profiles?.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{registration.profiles?.email || 'N/A'}</TableCell>
+                          <TableCell>{registration.profiles?.phone_no || 'N/A'}</TableCell>
+                          <TableCell>{registration.profiles?.d_no || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge>{registration.events?.title || 'N/A'}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(registration.registered_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditRegistration(registration)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No event registrations found
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit Registration Dialog */}
+            <Dialog open={isEditRegistrationOpen} onOpenChange={setIsEditRegistrationOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Student Details</DialogTitle>
+                  <DialogDescription>
+                    Update student information below.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="reg_name">Full Name</Label>
+                    <Input
+                      id="reg_name"
+                      value={registrationForm.full_name}
+                      onChange={(e) => setRegistrationForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Student name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reg_email">Email</Label>
+                    <Input
+                      id="reg_email"
+                      type="email"
+                      value={registrationForm.email}
+                      onChange={(e) => setRegistrationForm(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Email address"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reg_phone">Phone Number</Label>
+                    <Input
+                      id="reg_phone"
+                      value={registrationForm.phone_no}
+                      onChange={(e) => setRegistrationForm(prev => ({ ...prev, phone_no: e.target.value }))}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reg_dno">D.No</Label>
+                    <Input
+                      id="reg_dno"
+                      value={registrationForm.d_no}
+                      onChange={(e) => setRegistrationForm(prev => ({ ...prev, d_no: e.target.value }))}
+                      placeholder="Department number"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleUpdateRegistration}>Update Student</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
       </div>
