@@ -46,7 +46,7 @@ Accessible via [Event Bridge - Live](https://eventbridge-college.lovable.app/)
 ---
 
 ## 🧑‍💻 Author
-**Lokesh Loki**  
+**Lokeshwaran Y**  
 Frontend & Web Developer  
 📧 Email: lokeshloki67@gmail.com  
 🌐 [Portfolio](https://lokesh-portfolio.vercel.app)
