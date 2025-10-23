@@ -115,9 +115,11 @@ const AdminDashboard: React.FC = () => {
   const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isEditRegistrationOpen, setIsEditRegistrationOpen] = useState(false);
+  const [isAddRegistrationOpen, setIsAddRegistrationOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingStaff, setEditingStaff] = useState<Profile | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<EventRegistration | null>(null);
+  const [students, setStudents] = useState<Profile[]>([]);
 
   // Form states
   const [eventForm, setEventForm] = useState({
@@ -148,6 +150,11 @@ const AdminDashboard: React.FC = () => {
     d_no: ''
   });
 
+  const [newRegistrationForm, setNewRegistrationForm] = useState({
+    user_id: '',
+    event_id: '',
+  });
+
   useEffect(() => {
     if (user) {
       fetchData();
@@ -161,6 +168,7 @@ const AdminDashboard: React.FC = () => {
         fetchStaff(),
         fetchStaffAssignments(),
         fetchEventRegistrations(),
+        fetchStudents(),
       ]);
     } catch (error) {
       toast({
@@ -190,6 +198,16 @@ const AdminDashboard: React.FC = () => {
       .order('full_name');
     
     if (data) setStaff(data);
+  };
+
+  const fetchStudents = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student')
+      .order('full_name');
+    
+    if (data) setStudents(data);
   };
 
   const fetchStaffAssignments = async () => {
@@ -301,29 +319,56 @@ const AdminDashboard: React.FC = () => {
     setIsStaffDialogOpen(true);
   };
 
-  const handleUpdateStaff = async () => {
-    if (!editingStaff) return;
+  const handleAddStaff = () => {
+    setEditingStaff(null);
+    setStaffForm({
+      full_name: '',
+      email: '',
+      phone_no: '',
+      d_no: ''
+    });
+    setIsStaffDialogOpen(true);
+  };
 
+  const handleSaveStaff = async () => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(staffForm)
-        .eq('id', editingStaff.id);
+      if (editingStaff) {
+        // Update existing staff
+        const { error } = await supabase
+          .from('profiles')
+          .update(staffForm)
+          .eq('id', editingStaff.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Staff member updated successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Staff member updated successfully",
+        });
+      } else {
+        // For adding new staff, we need to guide them to create auth account first
+        toast({
+          title: "Info",
+          description: "Please create a staff auth account first in Supabase Authentication, then their profile will appear here for editing.",
+          variant: "default",
+        });
+        setIsStaffDialogOpen(false);
+        return;
+      }
 
       setIsStaffDialogOpen(false);
       setEditingStaff(null);
+      setStaffForm({
+        full_name: '',
+        email: '',
+        phone_no: '',
+        d_no: ''
+      });
       fetchStaff();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update staff member",
+        description: "Failed to save staff member",
         variant: "destructive",
       });
     }
@@ -450,6 +495,46 @@ const AdminDashboard: React.FC = () => {
       toast({
         title: "Error",
         description: "Failed to update student details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddRegistration = async () => {
+    try {
+      if (!newRegistrationForm.user_id || !newRegistrationForm.event_id) {
+        toast({
+          title: "Error",
+          description: "Please select both student and event",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('event_registrations')
+        .insert({
+          user_id: newRegistrationForm.user_id,
+          event_id: newRegistrationForm.event_id,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Student registered to event successfully",
+      });
+
+      setIsAddRegistrationOpen(false);
+      setNewRegistrationForm({
+        user_id: '',
+        event_id: '',
+      });
+      fetchEventRegistrations();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to register student to event",
         variant: "destructive",
       });
     }
@@ -642,11 +727,19 @@ const AdminDashboard: React.FC = () => {
           <TabsContent value="staff" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  Staff Management
-                </CardTitle>
-                <CardDescription>Manage staff member profiles</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserPlus className="h-5 w-5" />
+                      Staff Management
+                    </CardTitle>
+                    <CardDescription>Manage staff member profiles</CardDescription>
+                  </div>
+                  <Button onClick={handleAddStaff}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Staff
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -683,13 +776,27 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Edit Staff Dialog */}
-            <Dialog open={isStaffDialogOpen} onOpenChange={setIsStaffDialogOpen}>
+            {/* Add/Edit Staff Dialog */}
+            <Dialog open={isStaffDialogOpen} onOpenChange={(open) => {
+              setIsStaffDialogOpen(open);
+              if (!open) {
+                setEditingStaff(null);
+                setStaffForm({
+                  full_name: '',
+                  email: '',
+                  phone_no: '',
+                  d_no: ''
+                });
+              }
+            }}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Edit Staff Member</DialogTitle>
+                  <DialogTitle>{editingStaff ? 'Edit Staff Member' : 'Add Staff Member'}</DialogTitle>
                   <DialogDescription>
-                    Update staff member information below.
+                    {editingStaff ? 
+                      'Update staff member information below.' :
+                      'Note: Create the staff auth account in Supabase Authentication first with role=staff.'
+                    }
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -732,7 +839,9 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleUpdateStaff}>Update Staff</Button>
+                  <Button onClick={handleSaveStaff}>
+                    {editingStaff ? 'Update Staff' : 'Add Staff'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -858,11 +967,72 @@ const AdminDashboard: React.FC = () => {
           <TabsContent value="registrations" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Event Registrations
-                </CardTitle>
-                <CardDescription>View and manage student event registrations</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Event Registrations
+                    </CardTitle>
+                    <CardDescription>View and manage student event registrations</CardDescription>
+                  </div>
+                  <Dialog open={isAddRegistrationOpen} onOpenChange={setIsAddRegistrationOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Registration
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Register Student to Event</DialogTitle>
+                        <DialogDescription>
+                          Select a student and event to create a registration.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="student">Student</Label>
+                          <Select
+                            value={newRegistrationForm.user_id}
+                            onValueChange={(value) => setNewRegistrationForm(prev => ({ ...prev, user_id: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select student" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {students.map((student) => (
+                                <SelectItem key={student.id} value={student.id}>
+                                  {student.full_name} ({student.email})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="reg_event">Event</Label>
+                          <Select
+                            value={newRegistrationForm.event_id}
+                            onValueChange={(value) => setNewRegistrationForm(prev => ({ ...prev, event_id: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select event" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {events.map((event) => (
+                                <SelectItem key={event.id} value={event.id}>
+                                  {event.title} - {new Date(event.date).toLocaleDateString()}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={handleAddRegistration}>Register Student</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </CardHeader>
               <CardContent>
                 {eventRegistrations.length > 0 ? (
