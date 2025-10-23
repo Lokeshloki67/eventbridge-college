@@ -1,7 +1,7 @@
 # 🎉 Event Bridge - College Event Management System
 
 ### 🔗 Live Demo  
-**Visit Here:** [https://eventbridge-college.lovable.app/](https://eventbridge-college.lovable.app/)
+**Visit Here:** [Joshep Eventbridge-college](https://eventbridge-college.lovable.app/)
 
 ---
 
