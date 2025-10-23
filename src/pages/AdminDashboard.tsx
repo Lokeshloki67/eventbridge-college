@@ -115,6 +115,7 @@ const AdminDashboard: React.FC = () => {
   const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isEditRegistrationOpen, setIsEditRegistrationOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingStaff, setEditingStaff] = useState<Profile | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<EventRegistration | null>(null);
 
@@ -226,21 +227,38 @@ const AdminDashboard: React.FC = () => {
 
       if (!profile) return;
 
-      const { error } = await supabase
-        .from('events')
-        .insert({
-          ...eventForm,
-          created_by: profile.id,
+      if (editingEvent) {
+        // Update existing event
+        const { error } = await supabase
+          .from('events')
+          .update(eventForm)
+          .eq('id', editingEvent.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Event updated successfully",
         });
+      } else {
+        // Create new event
+        const { error } = await supabase
+          .from('events')
+          .insert({
+            ...eventForm,
+            created_by: profile.id,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Event created successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Event created successfully",
+        });
+      }
 
       setIsEventDialogOpen(false);
+      setEditingEvent(null);
       setEventForm({
         title: '',
         description: '',
@@ -253,10 +271,23 @@ const AdminDashboard: React.FC = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create event",
+        description: editingEvent ? "Failed to update event" : "Failed to create event",
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setEventForm({
+      title: event.title,
+      description: event.description,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      capacity: event.capacity,
+    });
+    setIsEventDialogOpen(true);
   };
 
   const handleEditStaff = (staffMember: Profile) => {
@@ -466,7 +497,20 @@ const AdminDashboard: React.FC = () => {
                     </CardTitle>
                     <CardDescription>Create and manage events</CardDescription>
                   </div>
-                  <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
+                  <Dialog open={isEventDialogOpen} onOpenChange={(open) => {
+                    setIsEventDialogOpen(open);
+                    if (!open) {
+                      setEditingEvent(null);
+                      setEventForm({
+                        title: '',
+                        description: '',
+                        date: '',
+                        time: '',
+                        location: '',
+                        capacity: 50,
+                      });
+                    }
+                  }}>
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
@@ -475,9 +519,9 @@ const AdminDashboard: React.FC = () => {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Create New Event</DialogTitle>
+                        <DialogTitle>{editingEvent ? 'Edit Event' : 'Create New Event'}</DialogTitle>
                         <DialogDescription>
-                          Fill in the details to create a new event.
+                          {editingEvent ? 'Update the event details below.' : 'Fill in the details to create a new event.'}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -540,7 +584,9 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button onClick={handleCreateEvent}>Create Event</Button>
+                        <Button onClick={handleCreateEvent}>
+                          {editingEvent ? 'Update Event' : 'Create Event'}
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -567,13 +613,22 @@ const AdminDashboard: React.FC = () => {
                         <TableCell>{event.location}</TableCell>
                         <TableCell>{event.capacity}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteEvent(event.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditEvent(event)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteEvent(event.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
