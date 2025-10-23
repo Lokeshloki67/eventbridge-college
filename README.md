@@ -1,73 +1,55 @@
-# Welcome to your Lovable project
+# 🎉 Event Bridge - College Event Management System
 
-## Project info
+### 🔗 Live Demo  
+**Visit Here:** [https://eventbridge-college.lovable.app/](https://eventbridge-college.lovable.app/)
 
-**URL**: https://lovable.dev/projects/8097baa0-1e9b-4fb2-9d38-8b54d4c8b03d
+---
 
-## How can I edit this code?
+## 📖 About the Project
 
-There are several ways of editing your application.
+**Event Bridge** is a web-based event management application designed to simplify and digitalize **college-level event coordination**.  
+It enables admins, event coordinators, and students to **manage events, add marks, announce winners, and track details** all in one place.  
 
-**Use Lovable**
+This platform streamlines event operations and enhances transparency across the college.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8097baa0-1e9b-4fb2-9d38-8b54d4c8b03d) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## ⚙️ Tech Stack
+- **React.js** – Frontend framework for building UI  
+- **Superbase** – Backend database for real-time storage and authentication  
+- **Tailwind CSS** – For responsive and clean styling  
+- **JavaScript (ES6)** – For interactivity and logic  
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## ✨ Features
+- 📅 **Event Creation & Management** – Add, update, and view events easily  
+- 🏆 **Mark Entry & Winner Announcements** – Manage results with transparency  
+- 🧑‍🎓 **Student & Coordinator Access** – Different roles for better control  
+- 📊 **Dynamic Dashboard** – Overview of all college events in one place  
+- 🔍 **Search & Filter System** – Quickly find any event or participant  
+- 🌐 **Responsive Design** – Works seamlessly on all devices  
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🧠 Learning Outcome
+- Implemented **real-time data sync** using **Superbase**  
+- Strengthened knowledge of **React hooks, state management, and routing**  
+- Designed an **interactive UI** using **Tailwind CSS**  
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Deployment
+Deployed using **Lovable.app** for smooth and fast hosting.  
+Accessible via [Event Bridge - Live](https://eventbridge-college.lovable.app/)
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## 🧑‍💻 Author
+**Lokesh Loki**  
+Frontend & Web Developer  
+📧 Email: lokeshloki67@gmail.com  
+🌐 [Portfolio](https://lokesh-portfolio.vercel.app)
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8097baa0-1e9b-4fb2-9d38-8b54d4c8b03d) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
