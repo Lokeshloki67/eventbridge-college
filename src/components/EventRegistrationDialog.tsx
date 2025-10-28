@@ -83,108 +83,15 @@ const EventRegistrationDialog: React.FC<EventRegistrationDialogProps> = ({
         </DialogHeader>
         
         <ScrollArea className="max-h-[70vh] pr-4">
-          <div className="space-y-6">
-            {/* Event Details */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>{event.date}</span>
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <Clock className="h-4 w-4 mr-2" />
-                  <span>{event.time}</span>
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>{event.venue}</span>
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <Users className="h-4 w-4 mr-2" />
-                  <span>{event.currentParticipants}/{event.maxParticipants} registered</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <Badge variant={isAvailable ? 'success' : 'destructive'}>
-                  {isAvailable ? 'Available' : 'Full'}
-                </Badge>
-                <Badge variant={event.isRegistrationOpen ? 'success' : 'destructive'}>
-                  {event.isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}
-                </Badge>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Event Description */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                Event Description
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {event.description}
-              </p>
-            </div>
-
-            <Separator />
-
-            {/* Rules and Regulations */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Rules & Regulations
-              </h3>
-              <ul className="space-y-2">
-                {rulesAndRegulations.map((rule, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <span className="text-primary font-semibold mt-0.5">•</span>
-                    <span>{rule}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <Separator />
-
-            {/* Event Benefits */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Event Benefits
-              </h3>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary font-semibold mt-0.5">•</span>
-                  <span>Certificate of participation for all attendees</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary font-semibold mt-0.5">•</span>
-                  <span>Winners will receive cash prizes and trophies</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary font-semibold mt-0.5">•</span>
-                  <span>Networking opportunities with industry experts</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary font-semibold mt-0.5">•</span>
-                  <span>Extra credit points for course evaluation</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+...
         </ScrollArea>
 
         <div className="flex gap-3 mt-6">
-          <Button variant="outline" className="flex-1">
-            Close
-          </Button>
           <Button
             variant="hero"
-            className="flex-1"
+            className="w-full"
             disabled={!event.isRegistrationOpen || (!isAvailable && !isRegistered) || isRegistered}
-            onClick={() => setShowForm(true)}
+            onClick={() => onRegister(event.id, {})}
           >
             {isRegistered 
               ? 'Already Registered ✓' 
