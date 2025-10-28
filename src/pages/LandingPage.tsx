@@ -90,7 +90,7 @@ const LandingPage: React.FC = () => {
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Welcome to{' '}
               <span className="bg-gradient-hero bg-clip-text text-transparent">
-                St. Xavier's College
+                St. Joseph's College
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
@@ -189,24 +189,24 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">About St. Xavier's College</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">About St. Joseph's College</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                With over 50 years of academic excellence, St. Xavier's College has been nurturing young minds 
-                and fostering innovation. Our vibrant campus life includes numerous events, competitions, 
-                and cultural activities that shape well-rounded individuals.
+                Established in 1844 by the Society of Jesus, St. Joseph's College is regarded as one of the most 
+                prestigious institutions in India. As an autonomous and affiliated first-grade college of 
+                Bharathidasan University, we continue our legacy of academic excellence and holistic development.
               </p>
               <div className="space-y-4">
                 <div className="flex items-center">
                   <MapPin className="h-5 w-5 text-primary mr-3" />
-                  <span>123 College Street, Academic City, State - 123456</span>
+                  <span>Annamalai Nagar, Woraiyur, Tiruchirappalli, Tamil Nadu 620002</span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 text-primary mr-3" />
-                  <span>Established in 1970</span>
+                  <span>Established in 1844</span>
                 </div>
                 <div className="flex items-center">
                   <Users className="h-5 w-5 text-primary mr-3" />
-                  <span>5000+ Active Students</span>
+                  <span>7,236+ Active Students</span>
                 </div>
               </div>
             </div>
@@ -214,16 +214,19 @@ const LandingPage: React.FC = () => {
               <h3 className="text-2xl font-bold mb-4">Contact Information</h3>
               <div className="space-y-3">
                 <div>
-                  <strong>Phone:</strong> +91 (123) 456-7890
+                  <strong>Phone:</strong> 0431 270 0320
                 </div>
                 <div>
-                  <strong>Email:</strong> info@stxaviers.edu
+                  <strong>Email:</strong> info@sjctni.edu
                 </div>
                 <div>
-                  <strong>Website:</strong> www.stxaviers.edu
+                  <strong>Website:</strong> www.sjctni.edu
                 </div>
                 <div>
-                  <strong>Admissions:</strong> admissions@stxaviers.edu
+                  <strong>Campus:</strong> 76 acres (30.8 ha)
+                </div>
+                <div>
+                  <strong>Affiliation:</strong> Bharathidasan University
                 </div>
               </div>
             </div>
@@ -235,9 +238,9 @@ const LandingPage: React.FC = () => {
       <footer className="bg-primary text-primary-foreground py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-lg font-medium mb-2">St. Xavier's College Event Management System</p>
+            <p className="text-lg font-medium mb-2">St. Joseph's College Event Management System</p>
             <p className="text-primary-foreground/80">
-              © 2024 St. Xavier's College. All rights reserved.
+              © 2024 St. Joseph's College, Tiruchirappalli. All rights reserved.
             </p>
           </div>
         </div>

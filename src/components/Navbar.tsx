@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
           <Link to="/" className="flex items-center space-x-2">
             <GraduationCap className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              CollegeEvents
+              St. Joseph's College
             </span>
           </Link>
           
