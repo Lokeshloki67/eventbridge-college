@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Event } from '@/components/EventCard';
 import { useToast } from '@/hooks/use-toast';
 import { User, Users, Plus, Minus } from 'lucide-react';
+import { z } from 'zod';
 
 interface TeamMember {
   name: string;
@@ -87,37 +88,44 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
     }));
   };
 
+  const secretarySchema = z.object({
+    secretaryName: z.string().trim().min(1, 'Secretary name is required').max(100, 'Name must be less than 100 characters'),
+    secretaryDno: z.string().trim().min(1, 'Secretary D.No is required').max(50, 'D.No must be less than 50 characters'),
+    secretaryEmail: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
+    secretaryPhone: z.string().trim().regex(/^[0-9]{10,15}$/, 'Phone must be 10-15 digits'),
+  });
+
+  const teammateSchema = z.object({
+    name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
+    dno: z.string().trim().min(1, 'D.No is required').max(50, 'D.No must be less than 50 characters'),
+    phone: z.string().trim().regex(/^[0-9]{10,15}$/, 'Phone must be 10-15 digits'),
+  });
+
   const validateForm = (): boolean => {
-    if (!formData.secretaryName.trim()) {
-      toast({ title: "Error", description: "Secretary name is required", variant: "destructive" });
-      return false;
-    }
-    if (!formData.secretaryDno.trim()) {
-      toast({ title: "Error", description: "Secretary D.No is required", variant: "destructive" });
-      return false;
-    }
-    if (!formData.secretaryEmail.trim() || !formData.secretaryEmail.includes('@')) {
-      toast({ title: "Error", description: "Valid email is required", variant: "destructive" });
-      return false;
-    }
-    if (!formData.secretaryPhone.trim() || formData.secretaryPhone.length < 10) {
-      toast({ title: "Error", description: "Valid phone number is required", variant: "destructive" });
+    // Validate secretary details
+    try {
+      secretarySchema.parse({
+        secretaryName: formData.secretaryName,
+        secretaryDno: formData.secretaryDno,
+        secretaryEmail: formData.secretaryEmail,
+        secretaryPhone: formData.secretaryPhone,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: "Error", description: error.errors[0].message, variant: "destructive" });
+      }
       return false;
     }
 
     // Validate teammates
     for (let i = 0; i < formData.teammates.length; i++) {
       const teammate = formData.teammates[i];
-      if (!teammate.name.trim()) {
-        toast({ title: "Error", description: `Teammate ${i + 1} name is required`, variant: "destructive" });
-        return false;
-      }
-      if (!teammate.dno.trim()) {
-        toast({ title: "Error", description: `Teammate ${i + 1} D.No is required`, variant: "destructive" });
-        return false;
-      }
-      if (!teammate.phone.trim() || teammate.phone.length < 10) {
-        toast({ title: "Error", description: `Teammate ${i + 1} valid phone number is required`, variant: "destructive" });
+      try {
+        teammateSchema.parse(teammate);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({ title: "Error", description: `Teammate ${i + 1}: ${error.errors[0].message}`, variant: "destructive" });
+        }
         return false;
       }
     }

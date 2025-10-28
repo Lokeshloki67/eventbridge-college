@@ -21,6 +21,7 @@ import {
   UserPlus,
   Settings
 } from 'lucide-react';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -235,8 +236,20 @@ const AdminDashboard: React.FC = () => {
     if (data) setEventRegistrations(data);
   };
 
+  const eventSchema = z.object({
+    title: z.string().trim().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
+    description: z.string().trim().min(1, 'Description is required').max(2000, 'Description must be less than 2000 characters'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    time: z.string().regex(/^\d{2}:\d{2}$/, 'Time must be in HH:MM format'),
+    location: z.string().trim().min(1, 'Location is required').max(200, 'Location must be less than 200 characters'),
+    capacity: z.number().int().min(1, 'Capacity must be at least 1').max(10000, 'Capacity must be 10000 or less'),
+  });
+
   const handleCreateEvent = async () => {
     try {
+      // Validate event data
+      eventSchema.parse(eventForm);
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
@@ -287,11 +300,19 @@ const AdminDashboard: React.FC = () => {
       });
       fetchEvents();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: editingEvent ? "Failed to update event" : "Failed to create event",
-        variant: "destructive",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: editingEvent ? "Failed to update event" : "Failed to create event",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -330,9 +351,19 @@ const AdminDashboard: React.FC = () => {
     setIsStaffDialogOpen(true);
   };
 
+  const staffSchema = z.object({
+    full_name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
+    email: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
+    phone_no: z.string().trim().regex(/^[0-9]{10,15}$/, 'Phone must be 10-15 digits').or(z.literal('')),
+    d_no: z.string().trim().max(50, 'D.No must be less than 50 characters').or(z.literal('')),
+  });
+
   const handleSaveStaff = async () => {
     try {
       if (editingStaff) {
+        // Validate staff data
+        staffSchema.parse(staffForm);
+
         // Update existing staff
         const { error } = await supabase
           .from('profiles')
@@ -366,11 +397,19 @@ const AdminDashboard: React.FC = () => {
       });
       fetchStaff();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save staff member",
-        variant: "destructive",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save staff member",
+          variant: "destructive",
+        });
+      }
     }
   };
 
