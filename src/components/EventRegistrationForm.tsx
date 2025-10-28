@@ -17,12 +17,8 @@ interface TeamMember {
 }
 
 interface RegistrationData {
-  secretaryName: string;
-  secretaryDno: string;
-  secretaryEmail: string;
-  secretaryPhone: string;
   numberOfParticipants: number;
-  teammates: TeamMember[];
+  participants: TeamMember[];
 }
 
 interface EventRegistrationFormProps {
@@ -38,12 +34,8 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<RegistrationData>({
-    secretaryName: '',
-    secretaryDno: '',
-    secretaryEmail: '',
-    secretaryPhone: '',
     numberOfParticipants: 1,
-    teammates: []
+    participants: [{ name: '', dno: '', phone: '' }]
   });
 
   const handleInputChange = (field: keyof RegistrationData, value: string | number) => {
@@ -54,82 +46,51 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
   };
 
   const handleParticipantCountChange = (count: number) => {
-    const newCount = Math.max(1, Math.min(5, count)); // Limit between 1-5
-    const currentTeammates = formData.teammates;
-    const newTeammates = [...currentTeammates];
+    const newCount = Math.max(1, Math.min(5, count));
+    const currentParticipants = formData.participants;
+    const newParticipants = [...currentParticipants];
 
-    if (newCount > 1) {
-      // Add new teammates if count increased
-      while (newTeammates.length < newCount - 1) {
-        newTeammates.push({ name: '', dno: '', phone: '' });
-      }
-      // Remove teammates if count decreased
-      if (newTeammates.length > newCount - 1) {
-        newTeammates.splice(newCount - 1);
-      }
-    } else {
-      // If count is 1, clear all teammates
-      newTeammates.length = 0;
+    while (newParticipants.length < newCount) {
+      newParticipants.push({ name: '', dno: '', phone: '' });
+    }
+    if (newParticipants.length > newCount) {
+      newParticipants.splice(newCount);
     }
 
     setFormData(prev => ({
       ...prev,
       numberOfParticipants: newCount,
-      teammates: newTeammates
+      participants: newParticipants
     }));
   };
 
-  const handleTeammateChange = (index: number, field: keyof TeamMember, value: string) => {
-    const newTeammates = [...formData.teammates];
-    newTeammates[index] = { ...newTeammates[index], [field]: value };
+  const handleParticipantChange = (index: number, field: keyof TeamMember, value: string) => {
+    const newParticipants = [...formData.participants];
+    newParticipants[index] = { ...newParticipants[index], [field]: value };
     setFormData(prev => ({
       ...prev,
-      teammates: newTeammates
+      participants: newParticipants
     }));
   };
 
-  const secretarySchema = z.object({
-    secretaryName: z.string().trim().min(1, 'Secretary name is required').max(100, 'Name must be less than 100 characters'),
-    secretaryDno: z.string().trim().min(1, 'Secretary D.No is required').max(50, 'D.No must be less than 50 characters'),
-    secretaryEmail: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
-    secretaryPhone: z.string().trim().regex(/^[0-9]{10,15}$/, 'Phone must be 10-15 digits'),
-  });
-
-  const teammateSchema = z.object({
+  const participantSchema = z.object({
     name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
     dno: z.string().trim().min(1, 'D.No is required').max(50, 'D.No must be less than 50 characters'),
     phone: z.string().trim().regex(/^[0-9]{10,15}$/, 'Phone must be 10-15 digits'),
   });
 
   const validateForm = (): boolean => {
-    // Validate secretary details
-    try {
-      secretarySchema.parse({
-        secretaryName: formData.secretaryName,
-        secretaryDno: formData.secretaryDno,
-        secretaryEmail: formData.secretaryEmail,
-        secretaryPhone: formData.secretaryPhone,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast({ title: "Error", description: error.errors[0].message, variant: "destructive" });
-      }
-      return false;
-    }
-
-    // Validate teammates
-    for (let i = 0; i < formData.teammates.length; i++) {
-      const teammate = formData.teammates[i];
+    for (let i = 0; i < formData.participants.length; i++) {
+      const participant = formData.participants[i];
       try {
-        teammateSchema.parse(teammate);
+        participantSchema.parse(participant);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          toast({ title: "Error", description: `Teammate ${i + 1}: ${error.errors[0].message}`, variant: "destructive" });
+          toast({ title: "Error", description: `Participant ${i + 1}: ${error.errors[0].message}`, variant: "destructive" });
         }
         return false;
       }
     }
-
     return true;
   };
 
@@ -152,76 +113,18 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Secretary Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Secretary Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="secretaryName">Secretary Name *</Label>
-              <Input
-                id="secretaryName"
-                placeholder="Enter secretary name"
-                value={formData.secretaryName}
-                onChange={(e) => handleInputChange('secretaryName', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="secretaryDno">D.No *</Label>
-              <Input
-                id="secretaryDno"
-                placeholder="Enter D.No (e.g., 22001A05XX)"
-                value={formData.secretaryDno}
-                onChange={(e) => handleInputChange('secretaryDno', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="secretaryEmail">Email *</Label>
-              <Input
-                id="secretaryEmail"
-                type="email"
-                placeholder="Enter email address"
-                value={formData.secretaryEmail}
-                onChange={(e) => handleInputChange('secretaryEmail', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="secretaryPhone">Phone Number *</Label>
-              <Input
-                id="secretaryPhone"
-                type="tel"
-                placeholder="Enter phone number"
-                value={formData.secretaryPhone}
-                onChange={(e) => handleInputChange('secretaryPhone', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Team Size */}
+      {/* Participant Configuration */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Team Configuration
+            Number of Participants
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="participantCount">Number of Participants (including secretary) *</Label>
+              <Label htmlFor="participantCount">How many participants? *</Label>
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -251,65 +154,64 @@ const EventRegistrationForm: React.FC<EventRegistrationFormProps> = ({
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">Maximum 5 participants allowed per team</p>
+              <p className="text-sm text-muted-foreground">Maximum 5 participants allowed</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Teammates Details */}
-      {formData.numberOfParticipants > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              Teammate Details ({formData.teammates.length} member{formData.teammates.length !== 1 ? 's' : ''})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {formData.teammates.map((teammate, index) => (
-              <div key={index}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="outline">Teammate {index + 1}</Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`teammate-${index}-name`}>Name *</Label>
-                    <Input
-                      id={`teammate-${index}-name`}
-                      placeholder="Enter teammate name"
-                      value={teammate.name}
-                      onChange={(e) => handleTeammateChange(index, 'name', e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`teammate-${index}-dno`}>D.No *</Label>
-                    <Input
-                      id={`teammate-${index}-dno`}
-                      placeholder="Enter D.No"
-                      value={teammate.dno}
-                      onChange={(e) => handleTeammateChange(index, 'dno', e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`teammate-${index}-phone`}>Phone Number *</Label>
-                    <Input
-                      id={`teammate-${index}-phone`}
-                      type="tel"
-                      placeholder="Enter phone number"
-                      value={teammate.phone}
-                      onChange={(e) => handleTeammateChange(index, 'phone', e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                {index < formData.teammates.length - 1 && <Separator className="mt-4" />}
+      {/* Participant Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Participant Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {formData.participants.map((participant, index) => (
+            <div key={index}>
+              <div className="flex items-center gap-2 mb-3">
+                <Badge variant="outline">Participant {index + 1}</Badge>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`participant-${index}-name`}>Name *</Label>
+                  <Input
+                    id={`participant-${index}-name`}
+                    placeholder="Enter participant name"
+                    value={participant.name}
+                    onChange={(e) => handleParticipantChange(index, 'name', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`participant-${index}-dno`}>D.No *</Label>
+                  <Input
+                    id={`participant-${index}-dno`}
+                    placeholder="Enter D.No"
+                    value={participant.dno}
+                    onChange={(e) => handleParticipantChange(index, 'dno', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`participant-${index}-phone`}>Phone Number *</Label>
+                  <Input
+                    id={`participant-${index}-phone`}
+                    type="tel"
+                    placeholder="Enter phone number"
+                    value={participant.phone}
+                    onChange={(e) => handleParticipantChange(index, 'phone', e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              {index < formData.participants.length - 1 && <Separator className="mt-4" />}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       {/* Form Actions */}
       <div className="flex gap-3">

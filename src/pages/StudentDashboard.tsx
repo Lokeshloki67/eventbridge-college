@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import EventCard, { Event } from '@/components/EventCard';
+import EventDetailsDialog from '@/components/EventDetailsDialog';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +23,7 @@ const StudentDashboard: React.FC = () => {
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
+  const [registrationIds, setRegistrationIds] = useState<{ [eventId: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
 
@@ -40,13 +42,36 @@ const StudentDashboard: React.FC = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user.uid)
-        .single();
+        .eq('email', user.email)
+        .maybeSingle();
 
       if (error) throw error;
-      setUserProfile(data);
+      
+      if (!data) {
+        // Create profile if it doesn't exist
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.uid,
+            email: user.email,
+            full_name: user.email.split('@')[0],
+            role: 'student'
+          })
+          .select()
+          .single();
+        
+        if (createError) throw createError;
+        setUserProfile(newProfile);
+      } else {
+        setUserProfile(data);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      toast({
+        title: "Profile Error",
+        description: "Unable to load your profile. Please try logging in again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -96,12 +121,17 @@ const StudentDashboard: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('event_registrations')
-        .select('event_id')
+        .select('id, event_id')
         .eq('user_id', userProfile.id);
 
       if (error) throw error;
       if (data) {
         setRegisteredEvents(data.map(reg => reg.event_id));
+        const idMap: { [eventId: string]: string } = {};
+        data.forEach(reg => {
+          idMap[reg.event_id] = reg.id;
+        });
+        setRegistrationIds(idMap);
       }
     } catch (error) {
       console.error('Error fetching registrations:', error);
@@ -223,12 +253,19 @@ const StudentDashboard: React.FC = () => {
               {myEvents.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {myEvents.map((event) => (
-                    <EventCard
+                    <EventDetailsDialog
                       key={event.id}
                       event={event}
-                      onRegister={() => {}}
-                      isRegistered={true}
-                    />
+                      registrationId={registrationIds[event.id]}
+                    >
+                      <div>
+                        <EventCard
+                          event={event}
+                          onRegister={() => {}}
+                          isRegistered={true}
+                        />
+                      </div>
+                    </EventDetailsDialog>
                   ))}
                 </div>
               ) : (

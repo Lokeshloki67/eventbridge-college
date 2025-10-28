@@ -360,10 +360,10 @@ const AdminDashboard: React.FC = () => {
 
   const handleSaveStaff = async () => {
     try {
-      if (editingStaff) {
-        // Validate staff data
-        staffSchema.parse(staffForm);
+      // Validate staff data
+      staffSchema.parse(staffForm);
 
+      if (editingStaff) {
         // Update existing staff
         const { error } = await supabase
           .from('profiles')
@@ -377,14 +377,21 @@ const AdminDashboard: React.FC = () => {
           description: "Staff member updated successfully",
         });
       } else {
-        // For adding new staff, we need to guide them to create auth account first
+        // Create new staff profile directly
+        const { error } = await supabase
+          .from('profiles')
+          .insert({
+            ...staffForm,
+            user_id: `staff-${Date.now()}`, // Temporary user_id
+            role: 'staff'
+          });
+
+        if (error) throw error;
+
         toast({
-          title: "Info",
-          description: "Please create a staff auth account first in Supabase Authentication, then their profile will appear here for editing.",
-          variant: "default",
+          title: "Success",
+          description: "Staff member added successfully",
         });
-        setIsStaffDialogOpen(false);
-        return;
       }
 
       setIsStaffDialogOpen(false);
