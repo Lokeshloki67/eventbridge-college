@@ -62,9 +62,9 @@ interface Profile {
   id: string;
   full_name: string;
   email: string;
-  role: string;
   d_no: string;
   phone_no: string;
+  user_roles?: { role: string }[];
 }
 
 interface StaffAssignment {
@@ -108,7 +108,7 @@ const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
-  const [staff, setStaff] = useState<Profile[]>([]);
+  const [staffMembers, setStaffMembers] = useState<Profile[]>([]);
   const [staffAssignments, setStaffAssignments] = useState<StaffAssignment[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,10 +133,10 @@ const AdminDashboard: React.FC = () => {
   });
 
   const [staffForm, setStaffForm] = useState({
-    full_name: '',
+    name: '',
     email: '',
-    phone_no: '',
-    d_no: ''
+    phone: '',
+    dno: ''
   });
 
   const [assignmentForm, setAssignmentForm] = useState({
@@ -166,7 +166,7 @@ const AdminDashboard: React.FC = () => {
     try {
       await Promise.all([
         fetchEvents(),
-        fetchStaff(),
+        fetchStaffMembers(),
         fetchStaffAssignments(),
         fetchEventRegistrations(),
         fetchStudents(),
@@ -191,24 +191,42 @@ const AdminDashboard: React.FC = () => {
     if (data) setEvents(data);
   };
 
-  const fetchStaff = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'staff')
-      .order('full_name');
-    
-    if (data) setStaff(data);
+  const fetchStaffMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          role,
+          profiles!inner(*)
+        `)
+        .eq('role', 'staff');
+
+      if (error) throw error;
+      const staffData = data?.map(ur => ur.profiles).filter(Boolean) || [];
+      setStaffMembers(staffData as any);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+    }
   };
 
   const fetchStudents = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'student')
-      .order('full_name');
-    
-    if (data) setStudents(data);
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          role,
+          profiles!inner(*)
+        `)
+        .eq('role', 'student');
+
+      if (error) throw error;
+      const studentData = data?.map(ur => ur.profiles).filter(Boolean) || [];
+      setStudents(studentData as any);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
   };
 
   const fetchStaffAssignments = async () => {
@@ -332,10 +350,10 @@ const AdminDashboard: React.FC = () => {
   const handleEditStaff = (staffMember: Profile) => {
     setEditingStaff(staffMember);
     setStaffForm({
-      full_name: staffMember.full_name,
+      name: staffMember.full_name,
       email: staffMember.email,
-      phone_no: staffMember.phone_no || '',
-      d_no: staffMember.d_no || ''
+      phone: staffMember.phone_no || '',
+      dno: staffMember.d_no || ''
     });
     setIsStaffDialogOpen(true);
   };
@@ -343,10 +361,10 @@ const AdminDashboard: React.FC = () => {
   const handleAddStaff = () => {
     setEditingStaff(null);
     setStaffForm({
-      full_name: '',
+      name: '',
       email: '',
-      phone_no: '',
-      d_no: ''
+      phone: '',
+      dno: ''
     });
     setIsStaffDialogOpen(true);
   };
@@ -367,7 +385,12 @@ const AdminDashboard: React.FC = () => {
         // Update existing staff
         const { error } = await supabase
           .from('profiles')
-          .update(staffForm)
+          .update({
+            full_name: staffForm.name,
+            email: staffForm.email,
+            phone_no: staffForm.phone,
+            d_no: staffForm.dno
+          })
           .eq('id', editingStaff.id);
 
         if (error) throw error;
@@ -377,32 +400,23 @@ const AdminDashboard: React.FC = () => {
           description: "Staff member updated successfully",
         });
       } else {
-        // Create new staff profile directly
-        const { error } = await supabase
-          .from('profiles')
-          .insert({
-            ...staffForm,
-            user_id: `staff-${Date.now()}`, // Temporary user_id
-            role: 'staff'
-          });
-
-        if (error) throw error;
-
         toast({
-          title: "Success",
-          description: "Staff member added successfully",
+          title: "Error",
+          description: "Cannot create staff directly. They must sign up through the authentication system.",
+          variant: "destructive"
         });
+        return;
       }
 
       setIsStaffDialogOpen(false);
       setEditingStaff(null);
       setStaffForm({
-        full_name: '',
+        name: '',
         email: '',
-        phone_no: '',
-        d_no: ''
+        phone: '',
+        dno: ''
       });
-      fetchStaff();
+      fetchStaffMembers();
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
@@ -799,7 +813,7 @@ const AdminDashboard: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {staff.map((member) => (
+                    {staffMembers.map((member) => (
                       <TableRow key={member.id}>
                         <TableCell className="font-medium">{member.full_name}</TableCell>
                         <TableCell>{member.email}</TableCell>
@@ -828,10 +842,10 @@ const AdminDashboard: React.FC = () => {
               if (!open) {
                 setEditingStaff(null);
                 setStaffForm({
-                  full_name: '',
+                  name: '',
                   email: '',
-                  phone_no: '',
-                  d_no: ''
+                  phone: '',
+                  dno: ''
                 });
               }
             }}>
@@ -850,8 +864,8 @@ const AdminDashboard: React.FC = () => {
                     <Label htmlFor="staff_name">Full Name</Label>
                     <Input
                       id="staff_name"
-                      value={staffForm.full_name}
-                      onChange={(e) => setStaffForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      value={staffForm.name}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Staff name"
                     />
                   </div>
@@ -869,8 +883,8 @@ const AdminDashboard: React.FC = () => {
                     <Label htmlFor="staff_phone">Phone Number</Label>
                     <Input
                       id="staff_phone"
-                      value={staffForm.phone_no}
-                      onChange={(e) => setStaffForm(prev => ({ ...prev, phone_no: e.target.value }))}
+                      value={staffForm.phone}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="Phone number"
                     />
                   </div>
@@ -878,8 +892,8 @@ const AdminDashboard: React.FC = () => {
                     <Label htmlFor="staff_dno">D.No</Label>
                     <Input
                       id="staff_dno"
-                      value={staffForm.d_no}
-                      onChange={(e) => setStaffForm(prev => ({ ...prev, d_no: e.target.value }))}
+                      value={staffForm.dno}
+                      onChange={(e) => setStaffForm(prev => ({ ...prev, dno: e.target.value }))}
                       placeholder="Department number"
                     />
                   </div>
@@ -930,7 +944,7 @@ const AdminDashboard: React.FC = () => {
                               <SelectValue placeholder="Select staff member" />
                             </SelectTrigger>
                             <SelectContent>
-                              {staff.map((member) => (
+                              {staffMembers.map((member) => (
                                 <SelectItem key={member.id} value={member.id}>
                                   {member.full_name}
                                 </SelectItem>
