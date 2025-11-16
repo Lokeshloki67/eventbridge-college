@@ -36,18 +36,42 @@ const StudentDashboard: React.FC = () => {
   }, [user]);
 
   const fetchUserProfile = async () => {
+    if (!user?.uid) return;
+    
     try {
-      const { data: profile } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user?.uid)
+        .eq('email', user.email)
         .maybeSingle();
 
-      if (profile) {
-        setUserProfile(profile);
+      if (error) throw error;
+      
+      if (!data) {
+        // Create profile if it doesn't exist
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.uid,
+            email: user.email,
+            full_name: user.email.split('@')[0],
+            role: 'student'
+          })
+          .select()
+          .single();
+        
+        if (createError) throw createError;
+        setUserProfile(newProfile);
+      } else {
+        setUserProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Profile Error",
+        description: "Unable to load your profile. Please try logging in again.",
+        variant: "destructive"
+      });
     }
   };
 

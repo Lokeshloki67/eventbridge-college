@@ -1,21 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'student' | 'staff' | 'admin';
 
 export interface AuthUser {
   email: string;
-  role: UserRole | null;
+  role: UserRole;
   uid: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: Session | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -31,104 +27,78 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        
-        if (session?.user) {
-          // Defer Supabase calls with setTimeout to prevent deadlock
-          setTimeout(async () => {
-            const { data: userRoles } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .limit(1)
-              .maybeSingle();
-
-            setUser({
-              email: session.user.email!,
-              role: userRoles?.role as UserRole || null,
-              uid: session.user.id
-            });
-          }, 0);
-        } else {
-          setUser(null);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          const { data: userRoles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .limit(1)
-            .maybeSingle();
-
-          setUser({
-            email: session.user.email!,
-            role: userRoles?.role as UserRole || null,
-            uid: session.user.id
-          });
-          setLoading(false);
-        }, 0);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    if (error) throw error;
+  // Demo users for localStorage authentication
+  const demoUsers = {
+    'student@college.edu': { password: 'password123', role: 'student' as UserRole },
+    'alex.thompson@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'jessica.liu@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'ryan.patel@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'maria.garcia@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'james.wilson@student.edu': { password: 'student123', role: 'student' as UserRole },
+    'staff@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'michael.chen@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'emily.rodriguez@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'david.kim@college.edu': { password: 'staff123', role: 'staff' as UserRole },
+    'admin@college.edu': { password: 'admin123', role: 'admin' as UserRole }
   };
 
-  const signup = async (email: string, password: string, fullName: string, role: UserRole) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          role: role
-        }
+  useEffect(() => {
+    // Check localStorage for existing user session
+    const savedUser = localStorage.getItem('authUser');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (email: string, password: string, role: UserRole) => {
+    try {
+      const demoUser = demoUsers[email as keyof typeof demoUsers];
+      
+      if (!demoUser || demoUser.password !== password || demoUser.role !== role) {
+        throw new Error('Invalid credentials or role');
       }
-    });
-    
-    if (error) throw error;
+
+      // Generate unique UIDs for demo users
+      const uidMap: { [key: string]: string } = {
+        'admin@college.edu': 'admin-demo-uid-001',
+        'staff@college.edu': 'staff-demo-uid-001',
+        'student@college.edu': 'student-demo-uid-001',
+        'michael.chen@college.edu': 'staff-demo-uid-002',
+        'emily.rodriguez@college.edu': 'staff-demo-uid-003',
+        'david.kim@college.edu': 'staff-demo-uid-004',
+        'alex.thompson@student.edu': 'student-demo-uid-002',
+        'jessica.liu@student.edu': 'student-demo-uid-003',
+        'ryan.patel@student.edu': 'student-demo-uid-004',
+        'maria.garcia@student.edu': 'student-demo-uid-005',
+        'james.wilson@student.edu': 'student-demo-uid-006'
+      };
+      const uid = uidMap[email] || `demo-${Date.now()}`;
+
+      const authUser: AuthUser = {
+        email,
+        role: demoUser.role,
+        uid
+      };
+
+      setUser(authUser);
+      localStorage.setItem('authUser', JSON.stringify(authUser));
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
     setUser(null);
-    setSession(null);
+    localStorage.removeItem('authUser');
   };
 
   const value = {
     user,
-    session,
     loading,
     login,
-    signup,
     logout
   };
 
