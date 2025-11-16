@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { GraduationCap, Shield, UserCheck, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import DemoDataButton from '@/components/DemoDataButton';
 
 const LoginPage: React.FC = () => {
   const [isSignup, setIsSignup] = useState(false);
@@ -136,6 +137,32 @@ const LoginPage: React.FC = () => {
                     <p className="text-sm text-muted-foreground">{tab.description}</p>
                   </div>
 
+                  {!isSignup && (
+                    <div className="bg-muted/50 p-3 rounded-lg mb-4">
+                      <p className="text-xs font-semibold mb-2 text-center">Demo Credentials</p>
+                      <div className="text-xs space-y-1">
+                        {tab.value === 'student' && (
+                          <>
+                            <p><span className="font-medium">Email:</span> student@college.edu</p>
+                            <p><span className="font-medium">Password:</span> student123</p>
+                          </>
+                        )}
+                        {tab.value === 'staff' && (
+                          <>
+                            <p><span className="font-medium">Email:</span> staff@college.edu</p>
+                            <p><span className="font-medium">Password:</span> staff123</p>
+                          </>
+                        )}
+                        {tab.value === 'admin' && (
+                          <>
+                            <p><span className="font-medium">Email:</span> admin@college.edu</p>
+                            <p><span className="font-medium">Password:</span> admin123</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {isSignup && (
                       <div className="space-y-2">
@@ -202,7 +229,9 @@ const LoginPage: React.FC = () => {
               ))}
             </Tabs>
 
-            <div className="mt-6">
+            <div className="mt-6 space-y-3">
+              {!isSignup && <DemoDataButton />}
+              
               <Button 
                 variant="outline" 
                 className="w-full"
